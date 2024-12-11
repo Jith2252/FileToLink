@@ -79,4 +79,4 @@ class Var:
     )
 
     # Multi-client support
-    MULTI_CLIENT: bool = False
+    MULTI_CLIENT = False
