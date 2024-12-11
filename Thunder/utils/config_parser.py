@@ -10,57 +10,37 @@ class TokenParser:
     A class to parse multiple bot tokens from environment variables.
     """
 
-    def __init__(self, config_file: Optional[str] = None):
-        """
-        Initialize the TokenParser.
+    def __init__(self, config_file: Optional[str] = None, prefix: str = "MULTI_TOKEN"):
+    self.tokens: Dict[int, str] = {}
+    self.config_file = config_file
+    self.prefix = prefix
 
-        Args:
-            config_file (Optional[str]): Path to a config file (not used in this implementation).
-        """
-        self.tokens: Dict[int, str] = {}
-        self.config_file = config_file
 
-    def parse_from_env(self) -> Dict[int, str]:
-        """
-        Parse bot tokens from environment variables.
+   def parse_from_env(self) -> Dict[int, str]:
+    multi_tokens = {
+        key: value for key, value in os.environ.items() if key.startswith("MULTI_TOKEN")
+    }
 
-        Looks for environment variables that start with "MULTI_TOKEN" and maps them
-        to client indices.
+    if not multi_tokens:
+        logger.error("No MULTI_TOKEN environment variables found.")
+        raise ValueError("No MULTI_TOKEN environment variables found.")
 
-        Example:
-            MULTI_TOKEN1=token_1
-            MULTI_TOKEN2=token_2
-            ...
-
-        Returns:
-            Dict[int, str]: A dictionary mapping client numbers to bot tokens.
-
-        Raises:
-            ValueError: If no tokens are found or tokens have invalid formats.
-        """
-        # Filter environment variables that start with "MULTI_TOKEN"
-        multi_tokens = {
-            key: value for key, value in os.environ.items() if key.startswith("MULTI_TOKEN")
-        }
-
-        if not multi_tokens:
-            logger.error("No MULTI_TOKEN environment variables found.")
-            raise ValueError("No MULTI_TOKEN environment variables found.")
-
-        # Extract the numeric part of the token key and sort them
+    try:
         sorted_tokens = sorted(
             multi_tokens.items(),
             key=lambda item: int(''.join(filter(str.isdigit, item[0])) or 0)
         )
+    except ValueError as e:
+        logger.error(f"Error parsing token keys: {e}")
+        raise ValueError("Invalid MULTI_TOKEN key format.") from e
 
-        # Map to a dictionary with integer keys starting at 1
-        self.tokens = {
-            index + 1: token for index, (key, token) in enumerate(sorted_tokens)
-        }
+    self.tokens = {
+        index + 1: token for index, (key, token) in enumerate(sorted_tokens)
+    }
 
-        if not self.tokens:
-            logger.error("No valid MULTI_TOKEN environment variables found.")
-            raise ValueError("No valid MULTI_TOKEN environment variables found.")
+    if not self.tokens:
+        logger.error("No valid MULTI_TOKEN environment variables found.")
+        raise ValueError("No valid MULTI_TOKEN environment variables found.")
 
-        logger.debug(f"Parsed tokens: {self.tokens}")
-        return self.tokens
+    logger.debug(f"Parsed tokens: {self.tokens}")
+    return self.tokens
